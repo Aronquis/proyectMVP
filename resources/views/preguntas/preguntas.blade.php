@@ -46,47 +46,47 @@
                                     </thead>
                                     <tbody>
                                     @if($tipo_db==2)
-                                        @while($row = $result->fetch_assoc())
+                                        @foreach($sql as $result)
                                         <tr>
                                             @if($pregunta==1 || $pregunta==6 || $pregunta==5)
-                                            <td><?php print_r($row["nombre"]); ?></td>
-                                            <td><?php print_r($row["apellido"]); ?></td>
-                                            <td><?php print_r($row["region"]); ?></td>
-                                            <td><?php print_r(@$row["total"]); ?></td>
+                                            <td><?php print_r($result->nombre); ?></td>
+                                            <td><?php print_r($result->apellido); ?></td>
+                                            <td><?php print_r($result->region); ?></td>
+                                            <td><?php print_r(@$result->total); ?></td>
                                             @endif
                                             @if($pregunta==2 || $pregunta==4)
-                                            <td><?php print_r($row["idVino"]); ?></td>
-                                            <td><?php print_r($row["nombre"]); ?></td>
-                                            <td><?php print_r($row["grado"]); ?></td>
-                                            <td><?php print_r($row["año"]); ?></td>
+                                            <td><?php print_r($result->idVino); ?></td>
+                                            <td><?php print_r($result->nombre); ?></td>
+                                            <td><?php print_r($result->grado); ?></td>
+                                            <td><?php print_r($result->año); ?></td>
                                             @endif
                                             @if($pregunta==3)
-                                                @if($row["vinos_idVino"]==null)
-                                                <td><?php print_r($row["nombre"]); ?></td>
-                                                <td><?php print_r($row["apellido"]); ?></td>
-                                                <td><?php print_r($row["region"]); ?></td>
+                                                @if($result->vinos_idVino==null)
+                                                <td><?php print_r($result->nombre); ?></td>
+                                                <td><?php print_r($result->apellido); ?></td>
+                                                <td><?php print_r($result->region); ?></td>
                                                 <?php ?>
                                                 @endif
                                             @endif
                                             @if($pregunta==7)
-                                                @if($row["idProductor"]!=$input)
-                                                    <td><?php print_r($row["nombre"]); ?></td>
-                                                    <td><?php print_r($row["apellido"]); ?></td>
-                                                    <td><?php print_r($row["region"]); ?></td>
-                                                    <td><?php print_r($row["total"]); ?></td>
+                                                @if($result->idProductor!=$input)
+                                                    <td><?php print_r($result->nombre); ?></td>
+                                                    <td><?php print_r($result->apellido); ?></td>
+                                                    <td><?php print_r($result->region); ?></td>
+                                                    <td><?php print_r($result->total); ?></td>
                                                 @endif
                                             @endif
 
                                             @if($pregunta==8)
-                                                @if(@$row["total"]==NULL && $row["nombre"]=="")
-                                                    <td><?php print_r($row["nombre"]); ?></td>
-                                                    <td><?php print_r($row["apellido"]); ?></td>
-                                                    <td><?php print_r($row["region"]); ?></td>
+                                                @if(@$result->total==NULL && $result->nombre=="")
+                                                    <td><?php print_r($result->nombre); ?></td>
+                                                    <td><?php print_r($result->apellido); ?></td>
+                                                    <td><?php print_r($result->region); ?></td>
                                                     <td><?php print_r(0); ?></td>
                                                 @endif
                                             @endif
                                         </tr>
-                                        @endwhile
+                                        @endforeach
                                     @else
                                         <?php
                                             switch($pregunta){

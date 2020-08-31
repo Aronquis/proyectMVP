@@ -2,7 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
-
+use App\Vino;
+use App\Productor;
+use App\Produccion;
+use Illuminate\Support\Facades\DB;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -13,7 +16,6 @@ use Illuminate\Http\Request;
 | contains the "web" middleware group. Now create something great!
 |
 */
-
 Route::get('/', function () {
     /*
     $mng = new MongoDB\Driver\Manager("mongodb://localhost:27017");
@@ -30,49 +32,83 @@ Route::get('/pregunta', function (Request $request){
     $pregunta=$request->get('pregunta');
     $input=$request->get('input');
     $tipo_db=$request->get('base_datos');
-    //////////
+    //////////Coneccion a Mongo DB
     $mng = new MongoDB\Driver\Manager("mongodb://localhost:27017");
     $listdatabases = new MongoDB\Driver\Command(["listDatabases" => 1]);
     $res = $mng->executeCommand("admin", $listdatabases);
     $query = new MongoDB\Driver\Query([]); 
     $rows = $mng->executeQuery("db_productores.productores", $query);
-    ////////////////////conect MYSQL ///////////
-    define('DB_SERVER', 'localhost');
-    define('DB_USERNAME', 'root');
-    define('DB_PASSWORD', '');
-    define('DB_NAME', 'db_productores');
-    $link = mysqli_connect(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
-    $sql="";
+    /////////
+    $sql=NULL;
     switch ($pregunta) {
         case 1:
-            $sql = "SELECT productores.* FROM productores INNER JOIN produccion ON produccion.productores_idProductor=productores.idProductor WHERE produccion.cantidadBotellas>".$input;
+            $sql=Productor::join('produccions','produccions.productores_idProductor','=','productors.idProductor')->where('produccions.cantidadBotellas','>',@$input)->get();
             break;
         case 2:
-            $sql = "SELECT vinos.* FROM vinos INNER JOIN produccion ON produccion.vinos_idVino=vinos.idVino INNER JOIN productores ON produccion.productores_idProductor=productores.idProductor WHERE productores.idProductor=".$input;
+            $sql=Vino::join('produccions','produccions.vinos_idVino','=','vinos.idVino')->join('productors','productors.idProductor','=','produccions.productores_idProductor')->where('productors.idProductor','>',@$input)->get();
             break;
         case 3:
-            $sql = "SELECT productores.*,produccion.vinos_idVino FROM productores LEFT JOIN produccion ON produccion.productores_idProductor=productores.idProductor";
+            $sql=Productor::leftjoin('produccions','produccions.productores_idProductor','=','productors.idProductor')->select('productors.*','produccions.vinos_idVino')->get();
             break;
         case 4:
-            $sql = "SELECT MAX(produccion.cantidadBotellas),vinos.* FROM vinos INNER JOIN produccion ON produccion.vinos_idVino=vinos.idVino ";
+            $sql=Produccion::join('vinos','vinos.idVino','=','produccions.vinos_idVino')
+                ->select('vinos.idVino','vinos.nombre','vinos.grado','vinos.año')
+                ->where('produccions.cantidadBotellas', \DB::raw("(select max(`cantidadBotellas`) from produccions)"))
+                ->groupBy('vinos.idVino')
+                ->groupBy('vinos.nombre')
+                ->groupBy('vinos.grado')
+                ->groupBy('vinos.año')
+                ->get();
             break;
         case 5:
-            $sql = "SELECT COUNT(produccion.vinos_idVino) AS total,productores.idProductor,productores.apellido,productores.nombre,productores.region FROM productores LEFT JOIN produccion ON produccion.productores_idProductor=productores.idProductor GROUP BY productores.idProductor HAVING total>=".$input;
+            $sql=Productor::leftjoin('produccions','produccions.productores_idProductor','=','productors.idProductor')
+                        ->select('productors.idProductor','productors.apellido','productors.nombre','productors.region',\DB::raw("COUNT(produccions.vinos_idVino) as total"))
+                        ->groupBy('productors.idProductor')
+                        ->groupBy('productors.apellido')
+                        ->groupBy('productors.nombre')
+                        ->groupBy('productors.region')
+                        ->get();
             break;
         case 6:
-            $sql = "SELECT SUM(produccion.cantidadBotellas) AS total,productores.idProductor,productores.apellido,productores.nombre,productores.region FROM productores INNER JOIN produccion ON produccion.productores_idProductor=productores.idProductor GROUP BY productores.idProductor HAVING total>".$input;
+            $sql=Productor::join('produccions','produccions.productores_idProductor','=','productors.idProductor')
+                        ->select('productors.idProductor','productors.apellido','productors.nombre','productors.region',\DB::raw("SUM(produccions.cantidadBotellas) as total"))
+                        ->groupBy('productors.idProductor')
+                        ->groupBy('productors.apellido')
+                        ->groupBy('productors.nombre')
+                        ->groupBy('productors.region')
+                        ->having('total','>',$input)
+                        ->get();
             break;
         case 7:
-            $sql_aux="SELECT COUNT(produccion.vinos_idVino) AS total,productores.idProductor,productores.apellido,productores.nombre,productores.region FROM productores LEFT JOIN produccion ON produccion.productores_idProductor=productores.idProductor GROUP BY productores.idProductor HAVING productores.idProductor=".$input;
-            $result_aux = $link->query($sql_aux);
+            $sql_aux=Productor::leftjoin('produccions','produccions.productores_idProductor','=','productors.idProductor')
+                    ->select('productors.idProductor','productors.apellido','productors.nombre','productors.region',\DB::raw("COUNT(produccions.vinos_idVino) as total"))
+                    ->groupBy('productors.idProductor')
+                    ->groupBy('productors.apellido')
+                    ->groupBy('productors.nombre')
+                    ->groupBy('productors.region')
+                    ->where('productors.idProductor',$input)
+                    ->get();
             $total=0;
-            while($row = $result_aux->fetch_assoc()){
-                $total=$row['total'];
+            foreach($sql_aux as $resu){
+                $total=$resu->total;
             }
-            $sql="SELECT COUNT(produccion.vinos_idVino) AS total,productores.idProductor,productores.apellido,productores.nombre,productores.region FROM productores LEFT JOIN produccion ON produccion.productores_idProductor=productores.idProductor GROUP BY productores.idProductor HAVING total>=".$total;
+            $sql=Productor::leftjoin('produccions','produccions.productores_idProductor','=','productors.idProductor')
+                    ->select('productors.idProductor','productors.apellido','productors.nombre','productors.region',\DB::raw("COUNT(produccions.vinos_idVino) as total"))
+                    ->groupBy('productors.idProductor')
+                    ->groupBy('productors.apellido')
+                    ->groupBy('productors.nombre')
+                    ->groupBy('productors.region')
+                    ->having('total','>=',$total)
+                    ->get();
             break;
         case 8:
-            $sql = "SELECT SUM(produccion.vinos_idVino) AS total,productores.idProductor,productores.apellido,productores.nombre,productores.region FROM productores LEFT JOIN produccion ON produccion.productores_idProductor=productores.idProductor GROUP BY productores.idProductor";
+            $sql=Productor::leftjoin('produccions','produccions.productores_idProductor','=','productors.idProductor')
+                    ->select('productors.idProductor','productors.apellido','productors.nombre','productors.region',\DB::raw("SUM(produccions.vinos_idVino) as total"))
+                    ->groupBy('productors.idProductor')
+                    ->groupBy('productors.apellido')
+                    ->groupBy('productors.nombre')
+                    ->groupBy('productors.region')
+                    ->get();
             break;
     }
     /////////////////////////////
@@ -80,8 +116,7 @@ Route::get('/pregunta', function (Request $request){
         return view('preguntas.preguntas', \compact('rows','pregunta','input','tipo_db'));
     }
     else{
-        $result = $link->query($sql);
-        return view('preguntas.preguntas', \compact('result','pregunta','input','tipo_db'));
+        return view('preguntas.preguntas', \compact('sql','pregunta','input','tipo_db'));
     }
     
 });

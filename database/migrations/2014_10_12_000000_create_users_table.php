@@ -29,20 +29,20 @@ class CreateUsersTable extends Migration
             $table->string('grado')->nullable();
             $table->string('año')->nullable();
         });
-        Schema::create('productores', function (Blueprint $table) {
+        Schema::create('productors', function (Blueprint $table) {
             $table->bigIncrements('idProductor');
             $table->string('apellido')->nullable();
             $table->string('nombre')->nullable();
             $table->string('region')->nullable();
         });
         
-        Schema::create('produccion', function (Blueprint $table) {
+        Schema::create('produccions', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->float('cantidadBotellas')->nullable();
             $table->bigInteger('vinos_idVino')->unsigned();
             $table->foreign('vinos_idVino')->references('idVino')->on('vinos')->onDelete('cascade');
             $table->bigInteger('productores_idProductor')->unsigned();
-            $table->foreign('productores_idProductor')->references('idProductor')->on('productores')->onDelete('cascade');
+            $table->foreign('productores_idProductor')->references('idProductor')->on('productors')->onDelete('cascade');
 
         });
     }
